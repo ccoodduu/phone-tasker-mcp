@@ -1,7 +1,6 @@
 """MCP Server exposing Tasker actions as tools for AI assistants."""
 
 import os
-from typing import Literal
 
 from dotenv import load_dotenv
 import httpx
@@ -53,101 +52,15 @@ async def torch_off() -> dict:
 
 
 @mcp.tool()
-async def toggle_torch(state: Literal["on", "off"]) -> dict:
-    """Toggle the phone's flashlight/torch on or off.
+async def launch_app(app_name: str) -> dict:
+    """Launch an app on the phone by its name.
 
     Args:
-        state: Either "on" or "off"
-    """
-    return await _call_tasker(f"/torch/{state}")
-
-
-@mcp.tool()
-async def set_brightness(level: int) -> dict:
-    """Set the phone's screen brightness.
-
-    Args:
-        level: Brightness level from 0 (minimum) to 255 (maximum)
-    """
-    level = max(0, min(255, level))
-    return await _call_tasker(f"/brightness/{level}")
-
-
-@mcp.tool()
-async def set_volume(stream: Literal["media", "ring", "alarm", "notification"], level: int) -> dict:
-    """Set volume for a specific audio stream.
-
-    Args:
-        stream: Audio stream type (media, ring, alarm, notification)
-        level: Volume level from 0 to 15
-    """
-    level = max(0, min(15, level))
-    return await _call_tasker(f"/volume/{stream}/{level}")
-
-
-@mcp.tool()
-async def send_notification(title: str, text: str) -> dict:
-    """Send a notification to the phone.
-
-    Args:
-        title: Notification title
-        text: Notification body text
+        app_name: The name of the app as it appears on the phone (e.g., Spotify, Chrome, Camera, Settings)
     """
     import urllib.parse
-    encoded_title = urllib.parse.quote(title)
-    encoded_text = urllib.parse.quote(text)
-    return await _call_tasker(f"/notify/{encoded_title}/{encoded_text}")
-
-
-@mcp.tool()
-async def vibrate(duration_ms: int = 500) -> dict:
-    """Vibrate the phone.
-
-    Args:
-        duration_ms: Vibration duration in milliseconds (default: 500)
-    """
-    duration_ms = max(100, min(5000, duration_ms))
-    return await _call_tasker(f"/vibrate/{duration_ms}")
-
-
-@mcp.tool()
-async def say_text(text: str) -> dict:
-    """Use text-to-speech to speak text on the phone.
-
-    Args:
-        text: The text to speak aloud
-    """
-    import urllib.parse
-    encoded_text = urllib.parse.quote(text)
-    return await _call_tasker(f"/say/{encoded_text}")
-
-
-@mcp.tool()
-async def get_battery_status() -> dict:
-    """Get the phone's current battery level and charging status."""
-    return await _call_tasker("/battery/status")
-
-
-@mcp.tool()
-async def launch_app(package_name: str) -> dict:
-    """Launch an app on the phone by its package name.
-
-    Args:
-        package_name: Android package name (e.g., com.spotify.music)
-    """
-    return await _call_tasker(f"/app/launch/{package_name}")
-
-
-@mcp.tool()
-async def take_photo() -> dict:
-    """Take a photo using the phone's camera."""
-    return await _call_tasker("/camera/photo")
-
-
-@mcp.tool()
-async def phone_ping() -> dict:
-    """Ping the phone to check if it's reachable and Tasker is responding."""
-    return await _call_tasker("/ping")
+    encoded_name = urllib.parse.quote(app_name)
+    return await _call_tasker(f"/app/launch/{encoded_name}")
 
 
 def main():
