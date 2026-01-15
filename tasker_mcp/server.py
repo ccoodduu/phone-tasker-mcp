@@ -11,7 +11,7 @@ load_dotenv()
 PHONE_HOST = os.getenv("TASKER_PHONE_HOST", "100.123.253.113")
 PHONE_PORT = int(os.getenv("TASKER_PHONE_PORT", "1821"))
 REQUEST_TIMEOUT = float(os.getenv("TASKER_TIMEOUT", "5.0"))
-WOL_SERVICE_URL = os.getenv("WOL_SERVICE_URL", "https://wakeonlan.tail8978a.ts.net")
+WOL_SERVICE_URL = os.getenv("WOL_SERVICE_URL", "http://localhost:3000")
 
 mcp = FastMCP("Tasker Phone Control")
 
