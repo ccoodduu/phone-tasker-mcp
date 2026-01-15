@@ -63,6 +63,36 @@ async def launch_app(app_name: str) -> dict:
     return await _call_tasker(f"/app/launch/{encoded_name}")
 
 
+@mcp.tool()
+async def volume_up() -> dict:
+    """Increase the phone's media volume by one step."""
+    return await _call_tasker("/volume/up")
+
+
+@mcp.tool()
+async def volume_down() -> dict:
+    """Decrease the phone's media volume by one step."""
+    return await _call_tasker("/volume/down")
+
+
+@mcp.tool()
+async def media_play_pause() -> dict:
+    """Toggle play/pause for the currently active media player."""
+    return await _call_tasker("/media/playpause")
+
+
+@mcp.tool()
+async def media_next() -> dict:
+    """Skip to the next track in the currently active media player."""
+    return await _call_tasker("/media/next")
+
+
+@mcp.tool()
+async def media_previous() -> dict:
+    """Go back to the previous track in the currently active media player."""
+    return await _call_tasker("/media/previous")
+
+
 def main():
     """Run the MCP server with SSE transport for container deployment."""
     import argparse
