@@ -171,19 +171,21 @@ async def wake_computer(mac: str = "18:c0:4d:66:71:23") -> dict:
     Args:
         mac: MAC address of the computer to wake (default: Williams PC)
     """
-    url = f"{WOL_SERVICE_URL}/wake?mac={mac}"
-    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
-        try:
-            response = await client.get(url)
-            return {
-                "success": response.status_code == 200,
-                "status_code": response.status_code,
-                "response": response.text or "Wake signal sent",
-            }
-        except httpx.TimeoutException:
-            return {"success": False, "error": "Request timed out"}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+    import asyncio
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "wakeonlan", mac,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await proc.communicate()
+        return {
+            "success": proc.returncode == 0,
+            "response": stdout.decode().strip() or "Wake signal sent",
+            "error": stderr.decode().strip() if proc.returncode != 0 else None
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 def main():
