@@ -11,6 +11,7 @@ load_dotenv()
 PHONE_HOST = os.getenv("TASKER_PHONE_HOST", "100.123.253.113")
 PHONE_PORT = int(os.getenv("TASKER_PHONE_PORT", "1821"))
 REQUEST_TIMEOUT = float(os.getenv("TASKER_TIMEOUT", "5.0"))
+WOL_SERVICE_URL = os.getenv("WOL_SERVICE_URL", "https://wakeonlan.tail8978a.ts.net")
 
 mcp = FastMCP("Tasker Phone Control")
 
@@ -91,6 +92,98 @@ async def media_next() -> dict:
 async def media_previous() -> dict:
     """Go back to the previous track in the currently active media player."""
     return await _call_tasker("/media/previous")
+
+
+WEATHER_CODES = {
+    0: "Klart vejr", 1: "Hovedsageligt klart", 2: "Delvist skyet", 3: "Overskyet",
+    45: "Tåge", 48: "Rimtåge", 51: "Let støvregn", 53: "Støvregn", 55: "Tæt støvregn",
+    61: "Let regn", 63: "Regn", 65: "Kraftig regn", 66: "Let isregn", 67: "Isregn",
+    71: "Let sne", 73: "Sne", 75: "Kraftig sne", 77: "Snebyger",
+    80: "Lette regnbyger", 81: "Regnbyger", 82: "Kraftige regnbyger",
+    85: "Lette snebyger", 86: "Kraftige snebyger",
+    95: "Tordenvejr", 96: "Tordenvejr med hagl", 99: "Kraftigt tordenvejr med hagl"
+}
+
+
+@mcp.tool()
+async def get_weather(city: str = "Copenhagen") -> dict:
+    """Get current weather and forecast for a city.
+
+    Args:
+        city: City name (e.g., Copenhagen, Aarhus, Odense)
+    """
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=1&language=da"
+            geo_response = await client.get(geo_url)
+            geo_data = geo_response.json()
+
+            if not geo_data.get("results"):
+                return {"success": False, "error": f"Could not find city: {city}"}
+
+            location = geo_data["results"][0]
+            lat, lon = location["latitude"], location["longitude"]
+            city_name = location.get("name", city)
+
+            weather_url = (
+                f"https://api.open-meteo.com/v1/forecast?"
+                f"latitude={lat}&longitude={lon}"
+                f"&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m"
+                f"&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+                f"&timezone=Europe/Copenhagen&forecast_days=3"
+            )
+            weather_response = await client.get(weather_url)
+            weather_data = weather_response.json()
+
+            current = weather_data.get("current", {})
+            daily = weather_data.get("daily", {})
+
+            forecast = []
+            for i in range(len(daily.get("time", []))):
+                forecast.append({
+                    "date": daily["time"][i],
+                    "condition": WEATHER_CODES.get(daily["weather_code"][i], "Ukendt"),
+                    "temp_max": daily["temperature_2m_max"][i],
+                    "temp_min": daily["temperature_2m_min"][i],
+                    "precipitation_chance": daily["precipitation_probability_max"][i]
+                })
+
+            return {
+                "success": True,
+                "city": city_name,
+                "current": {
+                    "temperature": current.get("temperature_2m"),
+                    "feels_like": current.get("apparent_temperature"),
+                    "condition": WEATHER_CODES.get(current.get("weather_code"), "Ukendt"),
+                    "humidity": current.get("relative_humidity_2m"),
+                    "wind_speed": current.get("wind_speed_10m")
+                },
+                "forecast": forecast
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+
+@mcp.tool()
+async def wake_computer(mac: str = "18:c0:4d:66:71:23") -> dict:
+    """Wake up a computer using Wake-on-LAN.
+
+    Args:
+        mac: MAC address of the computer to wake (default: Williams PC)
+    """
+    url = f"{WOL_SERVICE_URL}/wake?mac={mac}"
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
+        try:
+            response = await client.get(url)
+            return {
+                "success": response.status_code == 200,
+                "status_code": response.status_code,
+                "response": response.text or "Wake signal sent",
+            }
+        except httpx.TimeoutException:
+            return {"success": False, "error": "Request timed out"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
 
 def main():
