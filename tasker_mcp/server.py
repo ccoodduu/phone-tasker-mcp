@@ -107,10 +107,10 @@ WEATHER_CODES = {
 
 @mcp.tool()
 async def get_weather(city: str = "Svenstrup") -> dict:
-    """Get current weather and forecast for a city.
+    """Get current weather and forecast. Uses Svenstrup as default if no city specified.
 
     Args:
-        city: City name (e.g., Copenhagen, Aarhus, Odense)
+        city: Optional city name. Defaults to Svenstrup if not provided.
     """
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
