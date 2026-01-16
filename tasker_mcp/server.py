@@ -106,7 +106,7 @@ WEATHER_CODES = {
 
 
 @mcp.tool()
-async def get_weather(city: str = "Copenhagen") -> dict:
+async def get_weather(city: str = "Svenstrup") -> dict:
     """Get current weather and forecast for a city.
 
     Args:
